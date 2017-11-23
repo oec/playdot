@@ -138,8 +138,6 @@ func (t Tool) index() func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
-	var tools = []Tool{}
-
 	flag.Parse()
 
 	if cfg, err := os.Open(*config); err != nil {

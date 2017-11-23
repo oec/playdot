@@ -6,8 +6,8 @@ input.
 
 You must first install 
 
-    - dpic from https://ece.uwaterloo.ca/~aplevich/dpic and 
-    - graphviz from https://graphviz.org
+   * dpic from https://ece.uwaterloo.ca/~aplevich/dpic and 
+   * graphviz from https://graphviz.org
 
 before you can use playdot properly.
 

@@ -1,0 +1,29 @@
+[
+	{
+		"Name":        "dot",
+		"Cmd":         "dot",
+		"Args":        ["-Tsvg", "-v"],
+		"Suffix":      ".dot",
+		"Description": "Graphviz, dot",
+		"BgColor":     "CadetBlue",
+		"Documentation": {
+			"http://graphviz.org/content/dot-language": "DOT Language",
+			"http://graphviz.org/":                     "Get graphviz from here"
+		},
+		"Example": "\ndigraph test123 {\n\ta -> b -> c;\n\ta -> {x y};\n\tb [shape=box];\n\tc [label=\"hello\\nworld\",color=blue,fontsize=13,\n\tfontname=\"Palatino-Italic\",fontcolor=red,style=filled];\n\ta -> z [label=\"hi\", weight=100];\n\tx -> z [label=\"multi-line\\nlabel\"];\n\tedge [style=dashed,color=red];\n\tb -> x;\n\t{rank=same; b x}\n} \n"
+	},
+
+	{
+		"Name":    "dpic",
+		"Cmd":     "dpic",
+		"Args":    ["-z", "-v"], 
+		"Suffix":  ".pic",
+		"BgColor": "Green",
+		"Documentation": {
+			"/static/dpicdoc.pdf":                     "DPIC manual",
+			"/static/gpic.raymond.pdf":                "GPIC (by E.Raymond)",
+			"https://ece.uwaterloo.ca/~aplevich/dpic": "Get DPIC from here"
+		},
+		"Example": "\n.PS\n\nbox \"foo\"; arrow ->; box \"bar\"\n\n.PE\n"
+	}
+]

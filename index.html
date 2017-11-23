@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<!-- Author: Özgür Kesim <oec-go@kesim.org> 2017 -->
+<html>
+	<head>
+		{{ $name := .Cur.Name }}
+		<title>playdot - {{$name}} online</title>
+
+		<link rel="stylesheet" href="/static/codemirror.css">
+		<script src="/static/codemirror.js"></script>
+		<script src="/static/{{$name}}.js"></script>
+<style>
+body {
+	height: 100vh;
+	width: 100%;
+	margin:0;
+	overflow:hidden;
+}
+
+#top {
+	padding:10px;
+	margin:0px;
+	font-size:20px;
+	font-family:Sans-serif;
+	background: {{ .Cur.BgColor }};
+}
+
+#source {
+	height: 40vh;
+	width: 100%;
+	overflow:auto;
+}
+
+#run {
+	margin: 10pt;
+}
+
+#doc {
+	margin: 20px;
+	font-size: 9pt;
+}
+
+#output {
+	width: 100%;
+	height: 50vh; 
+	overflow:auto;
+}
+
+
+.on {
+	background:white;
+	color:{{.Cur.BgColor}};
+	padding: 5px;
+}
+
+svg {
+	padding: 5px;
+	// border: 2px solid lime;
+}
+
+#link {
+    margin-left: 20px;
+}
+
+.button {
+    background-color: {{ .Cur.BgColor }};
+    border: none;
+    color: white;
+    padding: 7px 13px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+.error {
+	background-color: lightsalmon;
+}
+</style>
+	</head>
+	<body>
+		<div id="top">Tools: {{ range .Tools }} 
+			{{ if eq .Name $name }} <span class="on">{{$name}}</span> {{ else }} <a href="/{{.Name}}">{{.Name}}</a> {{ end }} |
+			{{ end }}
+		</div>
+<!--
+	TODO:
+		- add download-button for output in other formats
+-->
+		<textarea name="source" id="source">
+{{ .Cur.Example }}
+</textarea>
+	<div id="mid">
+		<button id="run"  class="button" onclick="run()" title="or ctrl-enter in editor">run</button>
+		<button id="save" class="button" onclick="share()">share</button><span id="link"></span>
+		<input id="file" type="file" name="file" class="button"/>
+		<input id="scale" type ="range" min ="0.5" max="3" step ="0.1" value ="1"/> 
+		<span id="doc">
+			Documentation:
+			{{ range $link, $text := .Cur.Documentation }}
+				<a href="{{$link}}" target="_blank">{{$text}}</a> /
+			{{ end }}
+		</span>
+	</div>
+	<div id="output"></div>
+	<script>
+var output = document.getElementById("output");
+var source = document.getElementById("source");
+var link   = document.getElementById("link");
+var filein = document.getElementById("file");
+var scale  = document.getElementById("scale");
+
+
+var editor = CodeMirror.fromTextArea(source, {
+	lineNumbers: true,
+	smartIndent: true,
+});
+
+window.onkeydown=function(e) {
+	if (e.ctrlKey && e.key == "Enter") {
+		e.preventDefault();
+		run();
+	}
+}
+
+filein.onchange=function() {
+	var file = filein.files[0];
+	var reader = new FileReader();
+	reader.onload = function (e) {
+		editor.setValue(e.target.result);
+	};
+	reader.readAsText(file);
+	window.location.hash="";
+}
+
+scale.onchange=function() {
+	var svg=output.querySelector("svg");
+	var sc = scale.valueAsNumber;
+	if (svg) {
+		svg.height.baseVal.value = svg.viewBox.baseVal.height*sc;
+		svg.width.baseVal.value = svg.viewBox.baseVal.width*sc;
+		console.log("scale:", sc, "svg:", svg.height.baseVal.value, svg.width.baseVal.value);
+	}
+}
+
+window.onhashchange = hashloc;
+
+
+function run() {
+	var data = editor.getValue().trim();
+	if (!data) return;
+	link.innerHtml = "";
+	var req = new XMLHttpRequest();
+	req.open("POST", "/{{$name}}/c", false);
+	req.onreadystatechange = function() {
+		switch (req.status) {
+			case 200:
+				output.innerHTML = req.responseText;
+				break;
+			case 400:
+				output.innerHTML = '<pre class="error">'+req.responseText+'</pre>';
+				break;
+		}
+	}
+	req.send(data);
+}
+
+function share() {
+	var data = editor.getValue();
+	var req = new XMLHttpRequest();
+	req.open("POST", "/{{$name}}/s", false);
+	req.onreadystatechange = function() {
+		switch (req.status) {
+			case 200:
+				link.innerHTML = "<i>saved as</i> <a href=\"/{{$name}}/#"+req.responseText+"!\">#"+req.responseText+"!</a>";
+				document.title= "{{$name}}#"+req.responseText;
+				document.location.hash=req.responseText+"!";
+				break;
+			case 400:
+				output.innerHTML = '<pre class="error">'+req.responseText+'</pre>';
+				break;
+		}
+	}
+	req.send(data);
+}
+
+function load(id) {
+	link.innerHtml = "";
+	var req = new XMLHttpRequest();
+	req.open("GET", "/{{$name}}/l/"+id, false);
+	req.onreadystatechange = function() {
+		switch (req.status) {
+			case 200:
+				editor.setValue(req.responseText);
+				break;
+			case 400:
+				editor.setValue("");
+				output.innerHTML = '<pre class="error">'+req.responseText+'</pre>';
+				break;
+		}
+	}
+	req.send();
+}
+
+function hashloc() {
+	var hash = window.location.hash;
+	if (hash) {
+		var parts = (hash.split('#')[1]).split('!');
+		var id = parts[0];
+		if (id) {
+			load(id);
+			document.title="{{$name}}#"+id;
+			if (parts.length > 1) run();
+		}
+	}
+}
+
+hashloc();
+	</script>
+	</body>
+</html>

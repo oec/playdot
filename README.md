@@ -12,6 +12,7 @@ You must first install
 before you can use playdot properly.
 
 Screenshots:
+
 <img src="dot.png" alt="dot screenshot" width=350px> <img src="dpic.png" alt="dpix screenshot" width=350px>
 
 ## Install

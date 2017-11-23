@@ -23,7 +23,6 @@ var (
 	cert    = flag.String("cert", "cert.pem", "certitifate")
 	key     = flag.String("key", "key.pem", "key")
 	savedir = flag.String("d", "saved", "direcotry to save the pics.")
-	tools   = []Tool{}
 )
 
 type Tool struct {
@@ -126,24 +125,26 @@ func (t Tool) load() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (t Tool) index() func(http.ResponseWriter, *http.Request) {
+func (t Tool) index(tmpl *template.Template, data interface{}) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if tmpl, err := template.ParseFiles("index.html"); err != nil {
-			log.Printf("error parsing index.html: %v", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
-		} else if err = tmpl.ExecuteTemplate(w, "index.html", map[string]interface{}{"Tools": tools, "Cur": t}); err != nil {
+		err := tmpl.ExecuteTemplate(w, "index.html", map[string]interface{}{"Tools": data, "Cur": t})
+		if err != nil {
 			log.Printf("error executing template for %s: %v", t.Name, err)
 		}
 	}
 }
 
 func main() {
-	flag.Parse()
+	var tools = []Tool{}
+	var tmpl *template.Template
 
+	flag.Parse()
 	if cfg, err := os.Open(*config); err != nil {
 		log.Fatal(err)
 	} else if err = json.NewDecoder(cfg).Decode(&tools); err != nil {
 		log.Fatalf("error loading %s: %v\n", *config, err)
+	} else if tmpl, err = template.ParseFiles("index.html"); err != nil {
+		log.Fatalf("error parsing index.html: %v", err)
 	}
 
 	for _, tool := range tools {
@@ -152,7 +153,7 @@ func main() {
 		http.HandleFunc(pre+"s", tool.save())
 		http.HandleFunc(pre+"l/", tool.load())
 		http.HandleFunc(pre+"svg/", tool.svg())
-		http.HandleFunc(pre, tool.index())
+		http.HandleFunc(pre, tool.index(tmpl, tools))
 		log.Println("handler for", pre, "registered")
 	}
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))

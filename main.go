@@ -23,6 +23,7 @@ var (
 	cert    = flag.String("cert", "cert.pem", "certitifate")
 	key     = flag.String("key", "key.pem", "key")
 	savedir = flag.String("d", "saved", "direcotry to save the pics.")
+	tools   = []Tool{}
 )
 
 type Tool struct {
@@ -36,14 +37,16 @@ type Tool struct {
 	BgColor       string
 }
 
-var tools = []Tool{}
-
 func (t Tool) execute(in io.Reader, w http.ResponseWriter) {
-	var cmd = exec.Command(t.Cmd, t.Args...) // Call to dot with SVG-output in safe-mode
+	var (
+		cmd      = exec.Command(t.Cmd, t.Args...)
+		err, buf = &bytes.Buffer{}, &bytes.Buffer{}
+	)
+
 	cmd.Stdin = in
-	err, buf := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stderr = err
 	cmd.Stdout = buf
+
 	if e := cmd.Run(); e == nil {
 		io.Copy(w, buf)
 	} else {
@@ -135,6 +138,7 @@ func (t Tool) index() func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
+	var tools = []Tool{}
 
 	flag.Parse()
 

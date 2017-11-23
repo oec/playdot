@@ -2,7 +2,7 @@
 	{
 		"Name":        "dot",
 		"Cmd":         "dot",
-		"Args":        ["-Tsvg", "-v"],
+		"Args":        ["-Tsvg"],
 		"Suffix":      ".dot",
 		"Description": "Graphviz, dot",
 		"BgColor":     "CadetBlue",

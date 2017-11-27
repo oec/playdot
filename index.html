@@ -92,8 +92,8 @@ svg {
 {{ .Cur.Example }}
 </textarea>
 	<div id="mid">
-		<button id="run"  class="button" onclick="run()" title="or ctrl-enter in editor">run</button>
-		<button id="save" class="button" onclick="share()">share</button><span id="link"></span>
+		<button id="run"  class="button" onclick="run()"   title="or ctrl-enter in editor">run</button>
+		<button id="save" class="button" onclick="share()" title="or ctrl-s in editor">share</button><span id="link"></span>
 		<input id="file" type="file" name="file" class="button"/>
 		<input id="scale" type ="range" min ="0.5" max="3" step ="0.1" value ="1"/> 
 		<span id="doc">
@@ -121,6 +121,9 @@ window.onkeydown=function(e) {
 	if (e.ctrlKey && e.key == "Enter") {
 		e.preventDefault();
 		run();
+	} else if (e.ctrlKey && e.key == "s") {
+		e.preventDefault();
+		share();
 	}
 }
 
@@ -131,6 +134,7 @@ filein.onchange=function() {
 		editor.setValue(e.target.result);
 	};
 	reader.readAsText(file);
+	filein.value="";
 	window.location.hash="";
 }
 

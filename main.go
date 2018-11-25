@@ -53,7 +53,7 @@ func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
 			return
 		}
 		defer os.Remove(tmpf.Name())
-		log.Printf("using tempfile: %q\n", tmpf.Name())
+		// log.Printf("using tempfile: %q\n", tmpf.Name())
 
 		args = []string{}
 		args = append(args, t.Args...)

@@ -25,5 +25,19 @@
 			"https://ece.uwaterloo.ca/~aplevich/dpic": "Get DPIC from here"
 		},
 		"Example": ".PS\n\nbox \"foo\"; arrow ->; box \"bar\"\n\n.PE"
+	},
+	{
+		"Name":    "povray",
+		"Cmd":     "povray",
+		"Args":    ["+O-", "-D"], 
+		"Suffix":  ".pov",
+		"NeedsFile": true,
+		"EncodeBase64": true,
+		"Description": "Povray, raytracer",
+		"BgColor": "Orange",
+		"Documentation": {
+			"http://povray.org/documentation/3.7.0/index.html": "POV-Ray for Unix"
+		},
+		"Example": "#include \"colors.inc\"\n#include \"woods.inc\"\n#include \"glass.inc\"\ncylinder {\n\t<-2,-2,0.5>, <-2,1,0.5>, 1\n\tpigment {color Red}\n}\nsphere {\n\t<0,1,1>, 1\n\tpigment {color Blue }\n}\nbox {\n\t<-3,-1,-1>, <1,-0.5, 2>\n\tpigment {\n\t\tCol_Glass_Winebottle\n\t}\n}\nbackground   { color Gray60 }\nlight_source {<0, 5, -3>   color White }\nlight_source {<-2, 2, 0.5> color Yellow }\ncamera {\n\tlocation <0, 2, -6>\n\tangle 50 right x\n\tlook_at\n\t<-1, 0, 0>\n}\n"
 	}
 ]

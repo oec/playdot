@@ -161,7 +161,11 @@ function run() {
 	req.onreadystatechange = function() {
 		switch (req.status) {
 			case 200:
-				output.innerHTML = req.responseText;
+				if (req.getResponseHeader("Content-Type") === "img/png") {
+					output.innerHTML = '<img src="data:image/png;base64,' + req.responseText + '"/>';
+				} else {
+					output.innerHTML = req.responseText;
+				}
 				break;
 			case 400:
 				output.innerHTML = '<pre class="error">'+req.responseText+'</pre>';

@@ -29,6 +29,8 @@ type Tool struct {
 	Name          string
 	Cmd           string
 	Args          []string
+	NeedsFile     bool
+	EncodeBase64  bool
 	Suffix        string
 	Description   string
 	Documentation map[string]string
@@ -36,31 +38,61 @@ type Tool struct {
 	BgColor       string
 }
 
-func (t Tool) execute(in io.Reader, w http.ResponseWriter) {
+func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
+	var args []string
+
+	if t.NeedsFile {
+		tmpf, e := ioutil.TempFile(".", "*"+t.Suffix)
+		if e != nil {
+			log.Printf("couldn't create tmp-file: %v\n", e)
+			http.Error(w, e.Error(), http.StatusInternalServerError)
+			return
+		} else if _, e = io.Copy(tmpf, in); e != nil {
+			log.Printf("couldn't write to tmp-file: %v\n", e)
+			http.Error(w, e.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer os.Remove(tmpf.Name())
+		log.Printf("using tempfile: %q\n", tmpf.Name())
+
+		args = []string{}
+		args = append(args, t.Args...)
+		args = append(args, tmpf.Name())
+	} else {
+		args = t.Args
+	}
+
 	var (
-		cmd      = exec.Command(t.Cmd, t.Args...)
+		cmd      = exec.Command(t.Cmd, args...)
 		err, buf = &bytes.Buffer{}, &bytes.Buffer{}
 	)
 
-	cmd.Stdin = in
+	if !t.NeedsFile {
+		cmd.Stdin = in
+	}
 	cmd.Stderr = err
 	cmd.Stdout = buf
 
 	if e := cmd.Run(); e == nil {
-		io.Copy(w, buf)
+		if t.EncodeBase64 {
+			w.Header().Add("Content-Type", "img/png")
+			io.Copy(base64.NewEncoder(base64.StdEncoding, w), buf)
+		} else {
+			io.Copy(w, buf)
+		}
 	} else {
 		log.Printf("%s returned error\n", t.Name)
 		http.Error(w, err.String(), http.StatusBadRequest)
 	}
 }
 
-func (t Tool) compile() func(http.ResponseWriter, *http.Request) {
+func (t *Tool) compile() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		t.execute(r.Body, w)
 	}
 }
 
-func (t Tool) svg() func(http.ResponseWriter, *http.Request) {
+func (t *Tool) svg() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := filepath.Base(r.URL.Path)
 		if file, err := os.Open(filepath.Join(*savedir, name+t.Suffix)); err != nil {
@@ -75,7 +107,7 @@ func (t Tool) svg() func(http.ResponseWriter, *http.Request) {
 
 const maxSnippetSize = 64 * 1024
 
-func (t Tool) save() func(http.ResponseWriter, *http.Request) {
+func (t *Tool) save() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(io.LimitReader(r.Body, maxSnippetSize))
 		if err != nil {
@@ -112,7 +144,7 @@ func (t Tool) save() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (t Tool) load() func(http.ResponseWriter, *http.Request) {
+func (t *Tool) load() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := filepath.Base(r.URL.Path)
 		if file, err := os.Open(filepath.Join(*savedir, name+t.Suffix)); err != nil {
@@ -125,7 +157,7 @@ func (t Tool) load() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (t Tool) index(tmpl *template.Template, data interface{}) func(http.ResponseWriter, *http.Request) {
+func (t *Tool) index(tmpl *template.Template, data interface{}) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := tmpl.ExecuteTemplate(w, "index.html", map[string]interface{}{"Tools": data, "Cur": t})
 		if err != nil {
@@ -135,7 +167,7 @@ func (t Tool) index(tmpl *template.Template, data interface{}) func(http.Respons
 }
 
 func main() {
-	var tools = []Tool{}
+	var tools = []*Tool{}
 	var tmpl *template.Template
 
 	flag.Parse()

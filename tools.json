@@ -32,7 +32,7 @@
 		"Args":    ["+O-", "-D", "+A0.9", "+R3"], 
 		"Suffix":  ".pov",
 		"NeedsFile": true,
-		"EncodeBase64": true,
+		"ContentType": "img/png",
 		"Description": "Povray, raytracer",
 		"BgColor": "Orange",
 		"Documentation": {

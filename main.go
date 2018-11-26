@@ -30,7 +30,7 @@ type Tool struct {
 	Cmd           string
 	Args          []string
 	NeedsFile     bool
-	EncodeBase64  bool
+	ContentType   string
 	Suffix        string
 	Description   string
 	Documentation map[string]string
@@ -74,8 +74,8 @@ func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
 	cmd.Stdout = buf
 
 	if e := cmd.Run(); e == nil {
-		if t.EncodeBase64 {
-			w.Header().Add("Content-Type", "img/png")
+		if t.ContentType != "" {
+			w.Header().Add("Content-Type", t.ContentType)
 			io.Copy(base64.NewEncoder(base64.StdEncoding, w), buf)
 		} else {
 			io.Copy(w, buf)

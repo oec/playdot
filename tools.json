@@ -29,7 +29,7 @@
 	{
 		"Name":    "povray",
 		"Cmd":     "povray",
-		"Args":    ["+O-", "-D"], 
+		"Args":    ["+O-", "-D", "+A0.9", "+R3"], 
 		"Suffix":  ".pov",
 		"NeedsFile": true,
 		"EncodeBase64": true,

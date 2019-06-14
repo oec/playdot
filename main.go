@@ -47,7 +47,6 @@ func (t Tool) execute(in io.Reader, w http.ResponseWriter) {
 	cmd.Stdout = buf
 
 	if e := cmd.Run(); e == nil {
-		w.Header().Set("Content-Type", "image/svg+xml")
 		io.Copy(w, buf)
 	} else {
 		log.Printf("%s returned error\n", t.Name)

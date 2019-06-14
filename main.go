@@ -92,7 +92,7 @@ func (t *Tool) compile() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (t *Tool) svg() func(http.ResponseWriter, *http.Request) {
+func (t *Tool) download() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := filepath.Base(r.URL.Path)
 		if file, err := os.Open(filepath.Join(*savedir, name+t.Suffix)); err != nil {
@@ -184,7 +184,7 @@ func main() {
 		http.HandleFunc(pre+"c", tool.compile())
 		http.HandleFunc(pre+"s", tool.save())
 		http.HandleFunc(pre+"l/", tool.load())
-		http.HandleFunc(pre+"svg/", tool.svg())
+		http.HandleFunc(pre+"d/", tool.download())
 		http.HandleFunc(pre, tool.index(tmpl, tools))
 		log.Println("handler for", pre, "registered")
 	}

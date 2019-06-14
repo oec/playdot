@@ -155,7 +155,7 @@ window.onhashchange = hashloc;
 function run() {
 	var data = editor.getValue().trim();
 	if (!data) return;
-	link.innerHtml = "";
+	link.innerHTML = "";
 	var req = new XMLHttpRequest();
 	req.open("POST", "/{{$name}}/c", false);
 	req.onreadystatechange = function() {
@@ -182,7 +182,8 @@ function share() {
 	req.onreadystatechange = function() {
 		switch (req.status) {
 			case 200:
-				link.innerHTML = "<i>saved as</i> <a href=\"/{{$name}}/#"+req.responseText+"!\">#"+req.responseText+"!</a>";
+				link.innerHTML = "<i>saved as</i> <a href=\"/{{$name}}/#"+req.responseText+"!\">#"+req.responseText+"!</a>" +
+						 " or <a href=\"/{{$name}}/d/"+req.responseText+"\">download</a>";
 				document.title= "{{$name}}#"+req.responseText;
 				document.location.hash=req.responseText+"!";
 				break;

@@ -76,6 +76,7 @@ func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
 	if e := cmd.Run(); e == nil {
 		if t.ContentType != "" {
 			w.Header().Add("Content-Type", t.ContentType)
+			w.Header().Set("Content-Transfer-Encoding", "base64")
 			io.Copy(base64.NewEncoder(base64.StdEncoding, w), buf)
 		} else {
 			w.Header().Add("Content-Type", "image/svg+xml")

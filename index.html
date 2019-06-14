@@ -161,7 +161,7 @@ function run() {
 	req.onreadystatechange = function() {
 		switch (req.status) {
 			case 200:
-				if (req.getResponseHeader("Content-Type") === "img/png") {
+				if (req.getResponseHeader("Content-Type") === "image/png") {
 					output.innerHTML = '<img src="data:image/png;base64,' + req.responseText + '"/>';
 				} else {
 					output.innerHTML = req.responseText;

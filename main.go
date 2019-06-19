@@ -14,11 +14,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 )
 
 var (
-	tls     = flag.String("t", ":8443", "[ip]:port to tls-listen to")
-	nontls  = flag.String("l", "", "optional, non-tls [ip]:port to listen to")
+	tls     = flag.String("https", "", "[ip]:port to tls-listen to")
+	nontls  = flag.String("http", "", "optional, non-tls [ip]:port to listen to")
 	config  = flag.String("cfg", "tools.json", "config file with tool-definitions")
 	cert    = flag.String("cert", "cert.pem", "certitifate")
 	key     = flag.String("key", "key.pem", "key")
@@ -38,7 +39,7 @@ type Tool struct {
 	BgColor       string
 }
 
-func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
+func (t *Tool) execute(in io.Reader, out io.WriteCloser, w http.ResponseWriter, b64 bool) {
 	var args []string
 
 	if t.NeedsFile {
@@ -53,6 +54,7 @@ func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
 			return
 		}
 		defer os.Remove(tmpf.Name())
+
 		// log.Printf("using tempfile: %q\n", tmpf.Name())
 
 		args = []string{}
@@ -71,13 +73,22 @@ func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
 		cmd.Stdin = in
 	}
 	cmd.Stderr = err
-	cmd.Stdout = buf
+	if out != nil {
+		cmd.Stdout = io.MultiWriter(buf, out)
+		defer out.Close()
+	} else {
+		cmd.Stdout = buf
+	}
 
 	if e := cmd.Run(); e == nil {
 		if t.ContentType != "" {
 			w.Header().Add("Content-Type", t.ContentType)
-			w.Header().Set("Content-Transfer-Encoding", "base64")
-			io.Copy(base64.NewEncoder(base64.StdEncoding, w), buf)
+			if b64 {
+				w.Header().Set("Content-Transfer-Encoding", "base64")
+				io.Copy(base64.NewEncoder(base64.StdEncoding, w), buf)
+			} else {
+				io.Copy(w, buf)
+			}
 		} else {
 			w.Header().Add("Content-Type", "image/svg+xml")
 			io.Copy(w, buf)
@@ -90,19 +101,37 @@ func (t *Tool) execute(in io.Reader, w http.ResponseWriter) {
 
 func (t *Tool) compile() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		t.execute(r.Body, w)
+		t.execute(r.Body, nil, w, true)
 	}
 }
 
 func (t *Tool) download() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		name := filepath.Base(r.URL.Path)
-		if file, err := os.Open(filepath.Join(*savedir, name+t.Suffix)); err != nil {
+		name := filepath.Join(*savedir, filepath.Base(r.URL.Path)+t.Suffix)
+
+		// output already exists, take it.
+		if out, err := os.Open(name + ".out"); err == nil {
+			defer out.Close()
+			if t.ContentType != "" {
+				w.Header().Add("Content-Type", t.ContentType)
+			} else {
+				w.Header().Add("Content-Type", "image/svg+xml")
+			}
+			io.Copy(w, out)
+			return
+		}
+
+		if file, err := os.Open(name); err != nil {
 			log.Println(err)
 			http.Error(w, "couldn't open file", http.StatusBadRequest)
 		} else {
 			defer file.Close()
-			t.execute(file, w)
+			out, err := os.Create(name + ".out")
+			if err != nil {
+				out = nil
+				log.Printf("Oops, couldn't create output file: %v\n", err)
+			}
+			t.execute(file, out, w, false)
 		}
 	}
 }
@@ -195,10 +224,25 @@ func main() {
 		http.Redirect(w, r, "/"+tools[0].Name, http.StatusFound)
 	})
 
+	var wg sync.WaitGroup
+
 	if len(*nontls) > 0 {
-		log.Println("listening non-tls on", *nontls)
-		log.Fatal(http.ListenAndServe(*nontls, nil))
+		wg.Add(1)
+		go func() {
+			log.Println("listening non-tls on", *nontls)
+			log.Fatal(http.ListenAndServe(*nontls, nil))
+			wg.Done()
+		}()
 	}
-	log.Println("listening tls on", *tls)
-	log.Fatal(http.ListenAndServeTLS(*tls, *cert, *key, nil))
+
+	if len(*tls) > 0 {
+		wg.Add(1)
+		go func() {
+			log.Println("listening tls on", *tls)
+			log.Fatal(http.ListenAndServeTLS(*tls, *cert, *key, nil))
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }

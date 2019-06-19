@@ -162,7 +162,7 @@ function run() {
 		switch (req.status) {
 			case 200:
 				if (req.getResponseHeader("Content-Type") === "image/png") {
-					output.innerHTML = '<img src="data:image/png;base64,' + req.responseText + '"/>';
+					output.innerHTML = '<img src="data:image/png;base64,' + req.responseText+ '"/>';
 				} else {
 					output.innerHTML = req.responseText;
 				}
